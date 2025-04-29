@@ -1,24 +1,59 @@
 :root {
-  --primary-color: #4a6bff;
-  --primary-light: #a0b0ff;
-  --primary-dark: #2a40b0;
-  --success-color: #2ecc71;
-  --warning-color: #f39c12;
-  --danger-color: #e74c3c;
-  --light-bg: #f8f9fa;
-  --light-text: #212529;
-  --dark-bg: #212529;
-  --dark-text: #f8f9fa;
-  --card-bg-light: #ffffff;
-  --card-bg-dark: #343a40;
-  --border-light: #dee2e6;
-  --border-dark: #495057;
+  --primary-color: #5c6bc0;
+  --primary-dark: #4555b9;
+  --primary-light: #8290d9;
+  
+  --success-color: #36b37e;
+  --warning-color: #ffab00;
+  --danger-color: #ff5630;
+  --info-color: #00b8d9;
+  
+  --bg-color: #ffffff;
+  --card-bg: #ffffff;
+  --border-color: #e0e0e0;
+  --input-bg: #f5f5f5;
+  
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  
+  --btn-hover-bg: #f0f0f0;
+  
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* Animation durations */
+  --animation-fast: 0.2s;
+  --animation-normal: 0.3s;
+  --animation-slow: 0.5s;
+}
+
+/* Dark mode variables */
+.dark-mode {
+  --primary-color: #7986cb;
+  --primary-dark: #5c6bc0;
+  --primary-light: #9fa8da;
+  
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --border-color: #333333;
+  --input-bg: #2c2c2c;
+  
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #909090;
+  
+  --btn-hover-bg: #333333;
+  
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
@@ -29,21 +64,21 @@ body {
 }
 
 body.dark-mode {
-  background-color: var(--dark-bg);
-  color: var(--dark-text);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
 }
 
 .app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--light-bg);
-  color: var(--light-text);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
 }
 
 .app.dark {
-  background-color: var(--dark-bg);
-  color: var(--dark-text);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
 }
 
 /* Header */
@@ -92,7 +127,7 @@ section {
   margin-bottom: 2rem;
   padding: 1.5rem;
   border-radius: 8px;
-  background-color: var(--card-bg-light);
+  background-color: var(--card-bg);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s, box-shadow 0.3s;
 }
@@ -102,7 +137,7 @@ section:hover {
 }
 
 .app.dark section {
-  background-color: var(--card-bg-dark);
+  background-color: var(--card-bg);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -138,7 +173,7 @@ h2 {
 .stat-item {
   flex: 1;
   min-width: 150px;
-  background-color: var(--light-bg);
+  background-color: var(--bg-color);
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -146,17 +181,17 @@ h2 {
 }
 
 .app.dark .stat-item {
-  background-color: var(--dark-bg);
+  background-color: var(--bg-color);
 }
 
 .stat-item h4 {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
 }
 
 .app.dark .stat-item h4 {
-  color: #aaa;
+  color: var(--text-tertiary);
 }
 
 .stat-value {
@@ -204,7 +239,7 @@ h2 {
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
   border-radius: 50px;
   font-size: 1rem;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
@@ -220,9 +255,9 @@ h2 {
 }
 
 .app.dark .search-input {
-  background-color: var(--dark-bg);
-  border-color: var(--border-dark);
-  color: var(--dark-text);
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 /* Forms */
@@ -250,12 +285,12 @@ label {
 input, textarea, select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-family: inherit;
   font-size: 1rem;
-  background-color: white;
-  color: var(--light-text);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
   transition: all 0.3s;
 }
 
@@ -268,9 +303,9 @@ input:focus, textarea:focus, select:focus {
 .app.dark input, 
 .app.dark textarea, 
 .app.dark select {
-  background-color: var(--dark-bg);
-  border-color: var(--border-dark);
-  color: var(--dark-text);
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 textarea {
@@ -337,12 +372,12 @@ textarea {
   display: flex;
   flex-direction: column;
   border-top: 5px solid;
-  background-color: white;
+  background-color: var(--bg-color);
   transition: all 0.3s ease;
 }
 
 .app.dark .task-card {
-  background-color: var(--card-bg-dark);
+  background-color: var(--card-bg);
 }
 
 .priority-low {
@@ -408,12 +443,12 @@ textarea {
   padding: 0 1rem;
   display: flex;
   justify-content: space-between;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
 .app.dark .task-meta {
-  color: #aaa;
+  color: var(--text-tertiary);
 }
 
 .task-actions {
@@ -431,12 +466,12 @@ textarea {
 .no-tasks {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 .app.dark .no-tasks {
-  color: #aaa;
+  color: var(--text-tertiary);
 }
 
 /* Footer */
@@ -511,4 +546,88 @@ footer {
   .stat-value {
     font-size: 1.5rem;
   }
+}
+
+/* App container */
+.app-container {
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Add floating action button styles */
+.floating-action-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.floating-action-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.dark-mode .floating-action-btn {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .floating-action-btn {
+    bottom: 70px;
+  }
+}
+
+/* Add styles for new UI elements */
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.add-task-btn {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-task-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--btn-hover-bg);
 }

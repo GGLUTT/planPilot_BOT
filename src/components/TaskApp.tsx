@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import storageService, { Task } from '../services/storageService';
 
 const TaskApp: React.FC = () => {
@@ -18,6 +18,7 @@ const TaskApp: React.FC = () => {
   });
   const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Load tasks and theme preference from localStorage on startup
   useEffect(() => {
@@ -54,15 +55,20 @@ const TaskApp: React.FC = () => {
       priority: 'medium',
       category: 'personal'
     });
+    setShowAddForm(false); // Hide form after adding
   };
 
   // Update task status
   const updateTaskStatus = (id: string, status: Task['status']) => {
-    setTasks(prev => 
-      prev.map(task => 
+    let updatedTasks;
+    if (status === 'completed') {
+      updatedTasks = storageService.completeTask(tasks, id);
+    } else {
+      updatedTasks = tasks.map(task => 
         task.id === id ? { ...task, status } : task
-      )
-    );
+      );
+    }
+    setTasks(updatedTasks);
   };
 
   // Delete task
@@ -99,6 +105,9 @@ const TaskApp: React.FC = () => {
   const totalCount = tasks.length;
   const completionPercentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
 
+  // Get unique categories for filter dropdown
+  const categories = ['all', ...tasks.map(task => task.category).filter((value, index, self) => self.indexOf(value) === index)];
+
   // Task entry animation
   const taskVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -109,7 +118,8 @@ const TaskApp: React.FC = () => {
         delay: i * 0.05,
         duration: 0.3
       }
-    })
+    }),
+    exit: { opacity: 0, x: -100, transition: { duration: 0.2 } }
   };
 
   return (
@@ -153,74 +163,23 @@ const TaskApp: React.FC = () => {
         </motion.section>
         
         <motion.section 
-          className="add-task"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <h2>Додати нове завдання</h2>
-          <form onSubmit={addTask}>
-            <div className="form-group">
-              <label htmlFor="title">Назва</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={newTask.title}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="description">Опис</label>
-              <textarea
-                id="description"
-                name="description"
-                value={newTask.description}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="priority">Пріоритет</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={newTask.priority}
-                  onChange={handleInputChange}
-                >
-                  <option value="low">Низький</option>
-                  <option value="medium">Середній</option>
-                  <option value="high">Високий</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="category">Категорія</label>
-                <input
-                  type="text"
-                  id="category"
-                  name="category"
-                  value={newTask.category}
-                  onChange={handleInputChange}
-                  placeholder="напр., особисте, робота, спорт"
-                />
-              </div>
-            </div>
-            
-            <button type="submit" className="btn btn-primary">Додати завдання</button>
-          </form>
-        </motion.section>
-        
-        <motion.section 
           className="task-filters"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <h2>Фільтри та пошук</h2>
+          <div className="filters-header">
+            <h2>Фільтри та пошук</h2>
+            <motion.button 
+              className="add-task-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              {showAddForm ? 'Скасувати' : 'Нове завдання'}
+            </motion.button>
+          </div>
+
           <div className="search-container">
             <input
               type="text"
@@ -266,14 +225,85 @@ const TaskApp: React.FC = () => {
                 value={filter.category}
                 onChange={(e) => setFilter(prev => ({ ...prev, category: e.target.value }))}
               >
-                <option value="all">Всі</option>
-                {Array.from(new Set(tasks.map(t => t.category))).map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category === 'all' ? 'Всі' : category}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
         </motion.section>
+        
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.section 
+              className="add-task"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2>Додати нове завдання</h2>
+              <form onSubmit={addTask}>
+                <div className="form-group">
+                  <label htmlFor="title">Назва</label>
+                  <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={newTask.title}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="description">Опис</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={newTask.description}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="priority">Пріоритет</label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={newTask.priority}
+                      onChange={handleInputChange}
+                    >
+                      <option value="low">Низький</option>
+                      <option value="medium">Середній</option>
+                      <option value="high">Високий</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="category">Категорія</label>
+                    <input
+                      type="text"
+                      id="category"
+                      name="category"
+                      value={newTask.category}
+                      onChange={handleInputChange}
+                      placeholder="напр., особисте, робота, спорт"
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">Додати завдання</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddForm(false)}>Скасувати</button>
+                </div>
+              </form>
+            </motion.section>
+          )}
+        </AnimatePresence>
         
         <motion.section 
           className="task-list"
@@ -281,45 +311,37 @@ const TaskApp: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <h2>Ваші завдання ({filteredTasks.length})</h2>
-          {filteredTasks.length === 0 ? (
-            <p className="no-tasks">Завдань не знайдено. Спробуйте додати нові!</p>
-          ) : (
-            <div className="tasks">
+          <h2>Мої завдання</h2>
+          
+          {filteredTasks.length > 0 ? (
+            <AnimatePresence>
               {filteredTasks.map((task, index) => (
                 <motion.div 
-                  key={task.id} 
-                  className={`task-card priority-${task.priority}`}
+                  key={task.id}
                   custom={index}
+                  variants={taskVariants}
                   initial="hidden"
                   animate="visible"
-                  variants={taskVariants}
-                  whileHover={{ 
-                    scale: 1.02,
-                    boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
-                  }}
+                  exit="exit"
+                  className={`task-card priority-${task.priority}`}
+                  style={{ borderTopColor: task.priority === 'high' ? 'var(--danger-color)' : task.priority === 'medium' ? 'var(--warning-color)' : 'var(--success-color)' }}
                 >
-                  <div className="task-header">
+                  <div className="task-content">
                     <h3>{task.title}</h3>
-                    <span className={`status status-${task.status}`}>
-                      {task.status === 'pending' ? 'Очікує' : 
-                       task.status === 'in-progress' ? 'В процесі' : 'Виконано'}
-                    </span>
-                  </div>
-                  
-                  <p className="task-description">{task.description || "Опис відсутній."}</p>
-                  
-                  <div className="task-meta">
-                    <span className="task-category">{task.category}</span>
-                    <span className="task-date">
-                      {new Date(task.createdAt).toLocaleDateString()}
-                    </span>
+                    {task.description && <p className="task-description">{task.description}</p>}
+                    <div className="task-meta">
+                      <span className="task-category">{task.category}</span>
+                      <span className="task-date">
+                        {new Date(task.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="task-actions">
                     <select
                       value={task.status}
                       onChange={(e) => updateTaskStatus(task.id, e.target.value as Task['status'])}
+                      className={`status-select status-${task.status}`}
                     >
                       <option value="pending">Очікує</option>
                       <option value="in-progress">В процесі</option>
@@ -327,14 +349,42 @@ const TaskApp: React.FC = () => {
                     </select>
                     
                     <button 
-                      className="btn btn-danger"
+                      className="delete-task"
                       onClick={() => deleteTask(task.id)}
+                      aria-label="Видалити завдання"
                     >
-                      Видалити
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                      </svg>
                     </button>
                   </div>
                 </motion.div>
               ))}
+            </AnimatePresence>
+          ) : (
+            <div className="no-tasks">
+              <p>Немає завдань, що відповідають вашим фільтрам.</p>
+              {filter.status !== 'all' || filter.priority !== 'all' || filter.category !== 'all' || searchTerm ? (
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setFilter({ status: 'all', priority: 'all', category: 'all' });
+                    setSearchTerm('');
+                  }}
+                >
+                  Скинути фільтри
+                </button>
+              ) : (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setShowAddForm(true)}
+                >
+                  Додати перше завдання
+                </button>
+              )}
             </div>
           )}
         </motion.section>
@@ -343,6 +393,21 @@ const TaskApp: React.FC = () => {
       <footer>
         <p>PlanPilot © {new Date().getFullYear()}</p>
       </footer>
+
+      <motion.button 
+        className="floating-action-btn"
+        onClick={() => setShowAddForm(true)}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5, type: 'spring' }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </motion.button>
     </div>
   );
 };
