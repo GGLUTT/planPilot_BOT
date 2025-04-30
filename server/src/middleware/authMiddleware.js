@@ -37,6 +37,9 @@ exports.protect = async (req, res, next) => {
   }
 };
 
+// Alias for protect (for compatibility)
+exports.authenticateToken = exports.protect;
+
 // Grant access to specific roles
 exports.authorize = (...roles) => {
   return (req, res, next) => {
