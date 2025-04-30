@@ -88,17 +88,58 @@ const ensureDataDirExists = async () => {
 const startServer = async () => {
   await ensureDataDirExists();
   
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     
     // Initialize Telegram bot
     if (process.env.TELEGRAM_BOT_TOKEN) {
-      initBot();
-      console.log('Telegram bot initialized');
+      try {
+        const bot = initBot();
+        if (bot) {
+          console.log('Telegram bot initialized');
+        } else {
+          console.warn('Failed to initialize Telegram bot');
+        }
+      } catch (error) {
+        console.error('Error during bot initialization:', error);
+      }
     } else {
       console.warn('TELEGRAM_BOT_TOKEN not found. Telegram bot not initialized.');
     }
   });
+  
+  // Обробка зупинки сервера
+  const handleShutdown = async () => {
+    console.log('Shutting down server...');
+    
+    // Отримуємо екземпляр бота і зупиняємо поллінг
+    const bot = telegramService.getBot();
+    if (bot) {
+      try {
+        console.log('Stopping Telegram bot polling...');
+        await bot.stopPolling();
+        console.log('Telegram bot polling stopped');
+      } catch (error) {
+        console.error('Error stopping Telegram bot:', error);
+      }
+    }
+    
+    // Закриваємо HTTP сервер
+    server.close(() => {
+      console.log('Server stopped');
+      process.exit(0);
+    });
+    
+    // На випадок, якщо сервер не закрився нормально
+    setTimeout(() => {
+      console.error('Forced exit');
+      process.exit(1);
+    }, 5000);
+  };
+  
+  // Підписуємось на події зупинки процесу
+  process.on('SIGTERM', handleShutdown);
+  process.on('SIGINT', handleShutdown);
 };
 
 startServer(); 

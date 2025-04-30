@@ -15,24 +15,65 @@ const initBot = () => {
     return null;
   }
   
-  // Create bot instance
-  bot = new TelegramBot(token, { polling: true });
+  // Якщо бот вже ініціалізований, повертаємо існуючий екземпляр
+  if (bot) {
+    console.log('Bot already initialized, returning existing instance');
+    return bot;
+  }
   
-  // Set commands menu
-  bot.setMyCommands([
-    { command: '/start', description: 'Почати роботу з ботом' },
-    { command: '/tasks', description: 'Переглянути ваші завдання' },
-    { command: '/today', description: 'Завдання на сьогодні' },
-    { command: '/connect', description: 'Підключити акаунт PlanPilot' },
-    { command: '/disconnect', description: 'Відключити акаунт' },
-    { command: '/notifications', description: 'Налаштування сповіщень' },
-    { command: '/help', description: 'Отримати допомогу' }
-  ]);
-  
-  // Register message handlers
-  registerBotHandlers(bot);
-  
-  return bot;
+  try {
+    // Create bot instance with additional options to prevent conflicts
+    bot = new TelegramBot(token, { 
+      polling: {
+        restart: true,
+        params: {
+          timeout: 30,
+          limit: 100
+        }
+      } 
+    });
+    
+    // Обробка помилок поллінгу
+    bot.on('polling_error', (error) => {
+      console.error('Telegram polling error:', error.message);
+      
+      // Якщо помилка конфлікту (409), зупиняємо поточний поллінг і перезапускаємо через певний час
+      if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
+        console.log('Conflict detected, stopping polling');
+        
+        bot.stopPolling()
+          .then(() => {
+            console.log('Polling stopped due to conflict');
+            // Почекаємо трохи перед перезапуском
+            setTimeout(() => {
+              console.log('Restarting polling after conflict');
+              bot.startPolling();
+            }, 5000); // 5 секунд пауза
+          })
+          .catch(err => console.error('Error stopping polling:', err));
+      }
+    });
+    
+    // Set commands menu
+    bot.setMyCommands([
+      { command: '/start', description: 'Почати роботу з ботом' },
+      { command: '/tasks', description: 'Переглянути ваші завдання' },
+      { command: '/today', description: 'Завдання на сьогодні' },
+      { command: '/connect', description: 'Підключити акаунт PlanPilot' },
+      { command: '/disconnect', description: 'Відключити акаунт' },
+      { command: '/notifications', description: 'Налаштування сповіщень' },
+      { command: '/help', description: 'Отримати допомогу' }
+    ]);
+    
+    // Register message handlers
+    registerBotHandlers(bot);
+    
+    console.log('Telegram bot successfully initialized');
+    return bot;
+  } catch (error) {
+    console.error('Error initializing Telegram bot:', error);
+    return null;
+  }
 };
 
 /**
