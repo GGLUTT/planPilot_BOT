@@ -47,12 +47,32 @@ const registerBotHandlers = (bot) => {
     // Check if user already connected
     const user = await User.findOne({ 'telegram.chatId': chatId });
     
+    // Create inline keyboard with WebApp button
+    const webAppUrl = process.env.CLIENT_URL || 'https://gglutt.github.io/planPilot_BOT';
+    const inlineKeyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: "Відкрити PlanPilot",
+            web_app: { url: webAppUrl }
+          }
+        ]
+      ]
+    };
+    
     if (user) {
-      bot.sendMessage(chatId, `Вітаю, ${user.name}! Ваш акаунт вже підключено до PlanPilot. Використовуйте команди для керування завданнями.`);
+      bot.sendMessage(
+        chatId, 
+        `Вітаю, ${user.name}! Ваш акаунт вже підключено до PlanPilot. Використовуйте команди для керування завданнями або відкрийте веб-додаток:`,
+        { reply_markup: inlineKeyboard }
+      );
     } else {
-      bot.sendMessage(chatId, 
+      bot.sendMessage(
+        chatId, 
         `Вітаю! Я бот PlanPilot для керування завданнями. ` +
-        `Щоб підключити ваш акаунт, введіть команду /connect та код, який ви отримаєте в додатку PlanPilot.`
+        `Щоб підключити ваш акаунт, введіть команду /connect та код, який ви отримаєте в додатку PlanPilot.\n\n` +
+        `Ви також можете відкрити веб-додаток, натиснувши кнопку нижче:`,
+        { reply_markup: inlineKeyboard }
       );
     }
   });
