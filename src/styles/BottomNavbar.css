@@ -1,0 +1,88 @@
+.bottom-navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: var(--bg-color);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  border-top: 1px solid var(--border-color);
+}
+
+.bottom-navbar .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px 0;
+}
+
+.bottom-navbar .nav-item.active {
+  color: var(--primary-color);
+}
+
+.bottom-navbar .nav-item .icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+}
+
+.bottom-navbar .nav-item span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bottom-navbar .nav-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* For dark mode */
+.dark-mode .bottom-navbar {
+  background-color: var(--bg-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .bottom-navbar .nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Animation for the active indicator */
+.bottom-navbar .nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  background-color: var(--primary-color);
+  transition: width 0.3s ease;
+}
+
+.bottom-navbar .nav-item.active::after {
+  width: 33%;
+}
+
+/* Make space at the bottom of the page for the navbar */
+body {
+  padding-bottom: 60px;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .bottom-navbar {
+    max-width: 500px;
+    margin: 0 auto;
+    border-radius: 12px 12px 0 0;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+  }
+} 

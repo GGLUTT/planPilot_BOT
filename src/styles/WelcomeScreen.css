@@ -1,0 +1,142 @@
+body.welcome-page {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  overflow: hidden;
+}
+
+.welcome-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 6rem;
+  z-index: 1;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.app-logo {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+}
+
+.app-name {
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+
+.welcome-tagline {
+  font-size: 1.3rem;
+  max-width: 500px;
+  margin-bottom: 3rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.welcome-button {
+  display: inline-block;
+  background-color: white;
+  color: #4a6bff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.welcome-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.welcome-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 0;
+}
+
+.wave {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Floating animation for the logo */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.app-logo {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+  .app-name {
+    font-size: 2.5rem;
+  }
+
+  .welcome-tagline {
+    font-size: 1.1rem;
+  }
+
+  .app-logo {
+    font-size: 4rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .app-name {
+    font-size: 2rem;
+  }
+
+  .welcome-tagline {
+    font-size: 1rem;
+  }
+
+  .app-logo {
+    font-size: 3.5rem;
+  }
+
+  .welcome-button {
+    font-size: 1.1rem;
+    padding: 0.8rem 2rem;
+  }
+} 
