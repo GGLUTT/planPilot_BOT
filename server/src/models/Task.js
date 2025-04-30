@@ -1,84 +1,121 @@
-const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+const db = require('../services/jsonDbService');
 
-const TaskSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Будь ласка, додайте назву завдання'],
-    trim: true,
-    maxlength: [100, 'Назва не може бути довшою за 100 символів']
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Опис не може бути довшим за 1000 символів']
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'in-progress', 'completed'],
-    default: 'pending'
-  },
-  priority: {
-    type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'medium'
-  },
-  category: {
-    type: String,
-    required: [true, 'Будь ласка, вкажіть категорію'],
-    trim: true
-  },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  completedAt: {
-    type: Date,
-    default: null
-  },
-  dueDate: {
-    type: Date,
-    default: null
-  },
-  reminderSet: {
-    type: Boolean,
-    default: false
-  },
-  reminderTime: {
-    type: Date,
-    default: null
-  },
-  reminderSent: {
-    type: Boolean,
-    default: false
+// Task model replacement for JSON DB
+class Task {
+  // Static functions (mongoose-like interface)
+  static async find(query = {}) {
+    const tasks = await db.getTasks();
+    
+    // Filter tasks based on query
+    return tasks.filter(task => {
+      // Filter by user
+      if (query.user && task.userId !== query.user) {
+        return false;
+      }
+      
+      // Filter by status
+      if (query.status && task.status !== query.status) {
+        return false;
+      }
+
+      // Filter by category
+      if (query.category && task.category !== query.category) {
+        return false;
+      }
+      
+      // Filter by reminders
+      if (query.reminderSet !== undefined && task.reminderSet !== query.reminderSet) {
+        return false;
+      }
+      
+      if (query.reminderSent !== undefined && task.reminderSent !== query.reminderSent) {
+        return false;
+      }
+      
+      // Filter by reminder time (for notifications)
+      if (query.reminderTime && query.reminderTime.$lte) {
+        const limitTime = new Date(query.reminderTime.$lte);
+        const taskTime = new Date(task.reminderTime);
+        if (taskTime > limitTime) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
   }
-});
 
-// Create index for faster queries
-TaskSchema.index({ user: 1, status: 1 });
-TaskSchema.index({ user: 1, category: 1 });
-TaskSchema.index({ user: 1, priority: 1 });
+  static async findById(id) {
+    return await db.getTaskById(id);
+  }
 
-// Add method to mark task as complete
-TaskSchema.methods.complete = function() {
-  this.status = 'completed';
-  this.completedAt = new Date();
-  return this.save();
-};
+  static async create(taskData) {
+    // Create task object with default values
+    const task = {
+      id: uuidv4(),
+      title: taskData.title,
+      description: taskData.description || '',
+      status: taskData.status || 'pending',
+      priority: taskData.priority || 'medium',
+      category: taskData.category,
+      userId: taskData.user, // Changed from user to userId
+      createdAt: taskData.createdAt || new Date(),
+      completedAt: taskData.completedAt || null,
+      dueDate: taskData.dueDate || null,
+      reminderSet: taskData.reminderSet || false,
+      reminderTime: taskData.reminderTime || null,
+      reminderSent: taskData.reminderSent || false
+    };
 
-// Add middleware to check for due tasks needing reminders
-TaskSchema.statics.findDueTasksForReminders = function() {
-  const now = new Date();
-  
-  return this.find({
-    reminderSet: true,
-    reminderSent: false,
-    reminderTime: { $lte: now }
-  }).populate('user', 'name email telegram.chatId telegram.notificationsEnabled');
-};
+    // Save to JSON DB
+    const savedTask = await db.createTask(task);
+    
+    // Add helper methods
+    return this.addTaskMethods(savedTask);
+  }
 
-module.exports = mongoose.model('Task', TaskSchema); 
+  static async findByIdAndUpdate(id, updateData, options = {}) {
+    const task = await db.updateTask(id, updateData);
+    return this.addTaskMethods(task);
+  }
+
+  static async findByIdAndDelete(id) {
+    await db.deleteTask(id);
+    return null;
+  }
+
+  // Find tasks for reminders
+  static async findDueTasksForReminders() {
+    const now = new Date();
+    const tasks = await this.find({
+      reminderSet: true,
+      reminderSent: false,
+      reminderTime: { $lte: now }
+    });
+    
+    // Add methods to all tasks
+    return tasks.map(task => this.addTaskMethods(task));
+  }
+
+  // Add methods to task objects
+  static addTaskMethods(task) {
+    if (!task) return null;
+
+    // Add method to mark task as complete
+    task.complete = async function() {
+      this.status = 'completed';
+      this.completedAt = new Date();
+      return await db.updateTask(this.id, this);
+    };
+
+    // Save method
+    task.save = async function() {
+      return await db.updateTask(this.id, this);
+    };
+
+    return task;
+  }
+}
+
+module.exports = Task; 

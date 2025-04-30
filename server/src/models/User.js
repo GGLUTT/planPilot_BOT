@@ -1,138 +1,115 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
+const db = require('../services/jsonDbService');
 
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Будь ласка, додайте ім\'я'],
-    trim: true,
-    maxlength: [50, 'Ім\'я не може бути довшим за 50 символів']
-  },
-  email: {
-    type: String,
-    required: [true, 'Будь ласка, додайте email'],
-    unique: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Будь ласка, додайте коректний email'
-    ]
-  },
-  password: {
-    type: String,
-    required: [true, 'Будь ласка, додайте пароль'],
-    minlength: [6, 'Пароль має містити не менше 6 символів'],
-    select: false
-  },
-  avatar: {
-    type: String,
-    default: '/avatars/avatar1.png'
-  },
-  theme: {
-    type: String,
-    enum: ['light', 'dark'],
-    default: 'light'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  // Telegram integration
-  telegram: {
-    chatId: {
-      type: String,
-      default: null
-    },
-    username: {
-      type: String,
-      default: null
-    },
-    isConnected: {
-      type: Boolean,
-      default: false
-    },
-    connectionCode: {
-      type: String,
-      default: null
-    },
-    codeExpires: {
-      type: Date,
-      default: null
-    },
-    notificationsEnabled: {
-      type: Boolean,
-      default: true
+// User model replacement for JSON DB
+class User {
+  // Static functions (mongoose-like interface)
+  static async findOne(query) {
+    const users = await db.getUsers();
+    if (query.email) {
+      return users.find(user => user.email === query.email);
     }
-  },
-  // Subscription
-  subscription: {
-    plan: {
-      type: String,
-      enum: ['free', 'basic', 'pro', 'enterprise'],
-      default: 'free'
-    },
-    startDate: {
-      type: Date,
-      default: null
-    },
-    endDate: {
-      type: Date,
-      default: null
-    },
-    active: {
-      type: Boolean,
-      default: false
-    },
-    autoRenew: {
-      type: Boolean,
-      default: false
-    },
-    paymentMethod: {
-      type: String,
-      default: null
-    }
-  }
-});
-
-// Encrypt password using bcrypt
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    next();
+    return null;
   }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
+  static async findById(id) {
+    return await db.getUserById(id);
+  }
 
-// Sign JWT and return
-UserSchema.methods.getSignedJwtToken = function() {
-  return jwt.sign(
-    { id: this._id },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
-  );
-};
+  static async create(userData) {
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.password, salt);
 
-// Match user entered password to hashed password in database
-UserSchema.methods.matchPassword = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
+    // Create user object with default values
+    const user = {
+      id: uuidv4(),
+      name: userData.name,
+      email: userData.email,
+      password: hashedPassword,
+      avatar: userData.avatar || '/avatars/avatar1.png',
+      theme: userData.theme || 'light',
+      createdAt: userData.createdAt || new Date(),
+      // Telegram integration
+      telegram: {
+        chatId: null,
+        username: null,
+        isConnected: false,
+        connectionCode: null,
+        codeExpires: null,
+        notificationsEnabled: true
+      },
+      // Subscription
+      subscription: {
+        plan: 'free',
+        startDate: null,
+        endDate: null,
+        active: false,
+        autoRenew: false,
+        paymentMethod: null
+      }
+    };
 
-// Generate and hash Telegram connection code
-UserSchema.methods.generateTelegramCode = async function() {
-  // Generate random 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  
-  // Set code expiration (10 minutes)
-  const codeExpires = new Date();
-  codeExpires.setMinutes(codeExpires.getMinutes() + 10);
-  
-  // Save to user
-  this.telegram.connectionCode = code;
-  this.telegram.codeExpires = codeExpires;
-  await this.save();
-  
-  return code;
-};
+    // Save to JSON DB
+    const savedUser = await db.createUser(user);
+    
+    // Add helper methods
+    return this.addUserMethods(savedUser);
+  }
 
-module.exports = mongoose.model('User', UserSchema); 
+  static async findByIdAndUpdate(id, updateData, options = {}) {
+    const user = await db.updateUser(id, updateData);
+    return this.addUserMethods(user);
+  }
+
+  // Add methods to user objects
+  static addUserMethods(user) {
+    if (!user) return null;
+
+    // Sign JWT and return
+    user.getSignedJwtToken = function() {
+      return jwt.sign(
+        { id: this.id },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRE || '30d' }
+      );
+    };
+
+    // Match user entered password to hashed password in database
+    user.matchPassword = async function(enteredPassword) {
+      return await bcrypt.compare(enteredPassword, this.password);
+    };
+
+    // Generate and hash Telegram connection code
+    user.generateTelegramCode = async function() {
+      // Generate random 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set code expiration (10 minutes)
+      const codeExpires = new Date();
+      codeExpires.setMinutes(codeExpires.getMinutes() + 10);
+      
+      // Update user with code
+      this.telegram.connectionCode = code;
+      this.telegram.codeExpires = codeExpires;
+      
+      // Save changes
+      await db.updateUser(this.id, { 
+        telegram: this.telegram 
+      });
+      
+      return code;
+    };
+
+    // Save method
+    user.save = async function() {
+      return await db.updateUser(this.id, this);
+    };
+
+    return user;
+  }
+}
+
+module.exports = User; 

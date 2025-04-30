@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs').promises;
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(morgan('dev'));
 app.use(cors({
-     origin: 'https://gglutt.github.io/planPilot_BOT/'
+     origin: process.env.CLIENT_URL || 'https://gglutt.github.io/planPilot_BOT'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,20 +53,40 @@ app.use((err, req, res, next) => {
   });
 });
 
-// MongoDB connection
-const connectDB = async () => {
+// Ensure data directory exists
+const ensureDataDirExists = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/planpilot');
-    console.log('MongoDB connected successfully');
+    const dataDir = path.join(__dirname, '../data');
+    await fs.mkdir(dataDir, { recursive: true });
+    
+    // Ensure users.json and tasks.json exist
+    const usersPath = path.join(dataDir, 'users.json');
+    const tasksPath = path.join(dataDir, 'tasks.json');
+    
+    try {
+      await fs.access(usersPath);
+    } catch (error) {
+      await fs.writeFile(usersPath, '[]', 'utf8');
+      console.log('Created users.json file');
+    }
+    
+    try {
+      await fs.access(tasksPath);
+    } catch (error) {
+      await fs.writeFile(tasksPath, '[]', 'utf8');
+      console.log('Created tasks.json file');
+    }
+    
+    console.log('Data directory and files are ready');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('Error creating data directory or files:', error);
     process.exit(1);
   }
 };
 
 // Start the server
 const startServer = async () => {
-  await connectDB();
+  await ensureDataDirExists();
   
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
