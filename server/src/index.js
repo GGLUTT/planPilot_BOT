@@ -14,7 +14,7 @@ const telegramRoutes = require('./routes/telegramRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
 // Telegram bot initialization
-const { initBot } = require('./services/telegramService');
+const telegramService = require('./services/telegramService');
 
 // Create Express app
 const app = express();
@@ -94,9 +94,17 @@ const startServer = async () => {
     // Initialize Telegram bot
     if (process.env.TELEGRAM_BOT_TOKEN) {
       try {
-        const bot = initBot();
+        const bot = telegramService.initBot();
         if (bot) {
           console.log('Telegram bot initialized');
+          
+          // Start reminder checker service
+          const reminderInterval = telegramService.startReminderChecker();
+          console.log('Task reminder service started');
+          
+          // Add cleanup for interval on shutdown
+          process.on('SIGTERM', () => clearInterval(reminderInterval));
+          process.on('SIGINT', () => clearInterval(reminderInterval));
         } else {
           console.warn('Failed to initialize Telegram bot');
         }

@@ -293,7 +293,7 @@ const registerBotHandlers = (bot) => {
     }
   });
   
-  // Toggle notifications
+  // Notifications command
   bot.onText(/\/notifications/, async (msg) => {
     const chatId = msg.chat.id;
     
@@ -302,18 +302,101 @@ const registerBotHandlers = (bot) => {
       const user = await User.findOne({ 'telegram.chatId': chatId });
       
       if (!user) {
-        return bot.sendMessage(chatId, 'Спочатку підключіть ваш акаунт PlanPilot командою /connect.');
+        return bot.sendMessage(chatId, 'Ви не підключені до жодного акаунту PlanPilot. Використайте /connect для підключення.');
       }
       
-      // Toggle notifications
-      user.telegram.notificationsEnabled = !user.telegram.notificationsEnabled;
-      await user.save();
+      // Створюємо клавіатуру для включення/відключення сповіщень
+      const keyboard = {
+        inline_keyboard: [
+          [
+            {
+              text: user.telegram.notificationsEnabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
+              callback_data: `toggle_notifications:${!user.telegram.notificationsEnabled}`
+            }
+          ],
+          [
+            {
+              text: '📝 Керувати завданнями',
+              web_app: { url: process.env.CLIENT_URL || 'https://gglutt.github.io/planPilot_BOT' }
+            }
+          ]
+        ]
+      };
       
-      const status = user.telegram.notificationsEnabled ? 'увімкнено' : 'вимкнено';
-      bot.sendMessage(chatId, `Сповіщення ${status}. ${user.telegram.notificationsEnabled ? 'Ви будете отримувати сповіщення про завдання.' : 'Ви не будете отримувати сповіщення.'}`);
+      bot.sendMessage(
+        chatId, 
+        `*Налаштування сповіщень*\n\nПоточний статус: ${user.telegram.notificationsEnabled ? '🔔 Увімкнено' : '🔕 Вимкнено'}\n\n` +
+        `Ви ${user.telegram.notificationsEnabled ? 'отримуєте' : 'не отримуєте'} сповіщення про завдання.`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        }
+      );
     } catch (error) {
-      console.error('Error toggling notifications:', error);
-      bot.sendMessage(chatId, 'Сталася помилка при зміні налаштувань сповіщень. Спробуйте пізніше.');
+      console.error('Error handling notifications command:', error);
+      bot.sendMessage(chatId, 'Помилка при отриманні налаштувань сповіщень. Спробуйте пізніше.');
+    }
+  });
+  
+  // Handle callback queries for buttons
+  bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const messageId = query.message.message_id;
+    const data = query.data;
+    
+    // Handle different callback types
+    if (data.startsWith('toggle_notifications:')) {
+      const enabled = data.split(':')[1] === 'true';
+      
+      try {
+        // Find user by chatId
+        const user = await User.findOne({ 'telegram.chatId': chatId });
+        
+        if (!user) {
+          return bot.answerCallbackQuery(query.id, { text: 'Помилка: акаунт не знайдено' });
+        }
+        
+        // Update notification settings
+        user.telegram.notificationsEnabled = enabled;
+        await user.save();
+        
+        // Update message with new status
+        const keyboard = {
+          inline_keyboard: [
+            [
+              {
+                text: enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
+                callback_data: `toggle_notifications:${!enabled}`
+              }
+            ],
+            [
+              {
+                text: '📝 Керувати завданнями',
+                web_app: { url: process.env.CLIENT_URL || 'https://gglutt.github.io/planPilot_BOT' }
+              }
+            ]
+          ]
+        };
+        
+        await bot.editMessageText(
+          `*Налаштування сповіщень*\n\nПоточний статус: ${enabled ? '🔔 Увімкнено' : '🔕 Вимкнено'}\n\n` +
+          `Ви ${enabled ? 'отримуєте' : 'не отримуєте'} сповіщення про завдання.`,
+          { 
+            chat_id: chatId, 
+            message_id: messageId,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          }
+        );
+        
+        // Answer callback query
+        bot.answerCallbackQuery(query.id, { 
+          text: enabled ? 'Сповіщення увімкнено' : 'Сповіщення вимкнено'
+        });
+      } catch (error) {
+        console.error('Error handling toggle notifications:', error);
+        bot.answerCallbackQuery(query.id, { text: 'Помилка при зміні налаштувань' });
+      }
     }
   });
   
@@ -332,54 +415,63 @@ const registerBotHandlers = (bot) => {
 };
 
 /**
- * Send a task notification to a user
+ * Send a notification about a task to the user via Telegram
+ * @param {Object} user User object
+ * @param {Object} task Task object
  */
 const sendTaskNotification = async (userId, message) => {
-  if (!bot) {
-    console.error('Telegram bot not initialized');
-    return false;
-  }
-  
   try {
-    // Find user
-    const user = await User.findById(userId);
-    
-    if (!user || !user.telegram.isConnected || !user.telegram.notificationsEnabled) {
+    // Ensure bot is initialized
+    if (!bot) {
+      console.error('Telegram bot not initialized');
       return false;
     }
     
-    // Send notification
+    // Find user
+    const user = await User.findById(userId);
+    
+    if (!user || !user.telegram || !user.telegram.chatId || !user.telegram.isConnected) {
+      console.log('User not connected to Telegram or chatId missing', userId);
+      return false;
+    }
+    
+    // Check if notifications are enabled
+    if (!user.telegram.notificationsEnabled) {
+      console.log('Notifications disabled for user', userId);
+      return false;
+    }
+    
+    // Send message
     await bot.sendMessage(user.telegram.chatId, message, { parse_mode: 'Markdown' });
+    
     return true;
   } catch (error) {
-    console.error('Error sending Telegram notification:', error);
+    console.error('Error sending task notification:', error);
     return false;
   }
 };
 
 /**
- * Send a reminder for a task
+ * Send reminder about a due task to the user
+ * @param {Object} task Task object with user reference
  */
 const sendTaskReminder = async (task) => {
-  if (!task.user || !task.user.telegram || !task.user.telegram.chatId) {
-    return false;
-  }
-  
   try {
-    const prioritySymbol = task.priority === 'high' ? '🔴' : (task.priority === 'medium' ? '🟠' : '🟢');
+    const user = await User.findById(task.userId);
     
-    const message = `*Нагадування про завдання*\n\n` +
-      `${prioritySymbol} *${task.title}*\n` +
-      `Категорія: ${task.category}\n` +
-      `${task.description ? `Опис: ${task.description}\n` : ''}`;
+    if (!user) {
+      console.log('User not found for task reminder', task.id);
+      return false;
+    }
     
-    await bot.sendMessage(task.user.telegram.chatId, message, { parse_mode: 'Markdown' });
+    const message = `🔔 *Нагадування про завдання*\n\n` +
+      `Завдання: *${task.title}*\n` +
+      `Пріоритет: ${task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟠' : '🟢'} ${task.priority}\n` +
+      `Категорія: ${task.category}\n\n` +
+      `${task.description ? `Опис: ${task.description}\n\n` : ''}` +
+      `Щоб відкрити завдання, перейдіть до додатку PlanPilot.`;
     
-    // Mark reminder as sent
-    task.reminderSent = true;
-    await task.save();
-    
-    return true;
+    return await sendTaskNotification(task.userId, message);
   } catch (error) {
     console.error('Error sending task reminder:', error);
     return false;
@@ -387,27 +479,64 @@ const sendTaskReminder = async (task) => {
 };
 
 /**
- * Process due task reminders
+ * Process all due task reminders
+ * Finds tasks with reminders that should be sent and sends them via Telegram
  */
 const processDueTaskReminders = async () => {
   try {
+    // Find all tasks that need reminders
     const dueTasks = await Task.findDueTasksForReminders();
     
-    for (const task of dueTasks) {
-      await sendTaskReminder(task);
+    if (dueTasks.length === 0) {
+      return;
     }
     
-    return dueTasks.length;
+    console.log(`Processing ${dueTasks.length} due task reminders`);
+    
+    for (const task of dueTasks) {
+      // Skip if Telegram reminders not enabled
+      if (!task.telegramReminderEnabled) {
+        console.log(`Telegram reminder not enabled for task ${task.id}`);
+        continue;
+      }
+      
+      // Send reminder
+      const sent = await sendTaskReminder(task);
+      
+      if (sent) {
+        console.log(`Sent reminder for task ${task.id}`);
+        
+        // Mark reminder as sent
+        task.reminderSent = true;
+        await task.save();
+      } else {
+        console.log(`Failed to send reminder for task ${task.id}`);
+      }
+    }
   } catch (error) {
-    console.error('Error processing due tasks:', error);
-    return 0;
+    console.error('Error processing due task reminders:', error);
   }
+};
+
+// Set up a periodic check for task reminders
+const startReminderChecker = () => {
+  // Check for reminders every minute
+  const checkInterval = 60 * 1000; // 1 minute
+  
+  console.log('Starting reminder checker with interval', checkInterval, 'ms');
+  
+  // Initial check after startup
+  setTimeout(processDueTaskReminders, 10000);
+  
+  // Set up interval for regular checks
+  return setInterval(processDueTaskReminders, checkInterval);
 };
 
 module.exports = {
   initBot,
+  getBot: () => bot,
   sendTaskNotification,
   sendTaskReminder,
   processDueTaskReminders,
-  getBot: () => bot
+  startReminderChecker
 }; 
