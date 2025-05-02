@@ -1,0 +1,96 @@
+.telegram-webapp-container {
+  padding: 20px;
+  padding-bottom: 80px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.telegram-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.telegram-header h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+}
+
+.telegram-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.telegram-info-card {
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .telegram-info-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.telegram-info-card h2 {
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  color: var(--primary-color);
+}
+
+.telegram-info-card ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.telegram-info-card li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+}
+
+.telegram-info-card li:before {
+  content: "✓";
+  color: var(--success-color);
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.dark-mode .telegram-info-card li {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.telegram-connect-section {
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.dark-mode .telegram-connect-section {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.telegram-connect-section p {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .telegram-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .telegram-info-card {
+    padding: 20px;
+  }
+  
+  .telegram-connect-section {
+    padding: 20px;
+  }
+} 

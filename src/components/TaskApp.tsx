@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import storageService, { Task } from '../services/storageService';
+import Confetti from './Confetti';
+import MotivationalQuote from './MotivationalQuote';
 
 const TaskApp: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -19,6 +21,9 @@ const TaskApp: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showQuote, setShowQuote] = useState(false);
+  const [newTag, setNewTag] = useState('');
 
   // Load tasks and theme preference from localStorage on startup
   useEffect(() => {
@@ -63,6 +68,14 @@ const TaskApp: React.FC = () => {
     let updatedTasks;
     if (status === 'completed') {
       updatedTasks = storageService.completeTask(tasks, id);
+      // Show confetti when task is completed
+      setShowConfetti(true);
+      // Show motivational quote with 20% chance
+      if (Math.random() < 0.2) {
+        setTimeout(() => {
+          setShowQuote(true);
+        }, 2000);
+      }
     } else {
       updatedTasks = tasks.map(task => 
         task.id === id ? { ...task, status } : task
@@ -74,6 +87,20 @@ const TaskApp: React.FC = () => {
   // Delete task
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(task => task.id !== id));
+  };
+  
+  // Add tag to task
+  const addTagToTask = (id: string, tag: string) => {
+    if (!tag.trim()) return;
+    const updatedTasks = storageService.addTagToTask(tasks, id, tag);
+    setTasks(updatedTasks);
+    setNewTag('');
+  };
+  
+  // Remove tag from task
+  const removeTagFromTask = (id: string, tag: string) => {
+    const updatedTasks = storageService.removeTagFromTask(tasks, id, tag);
+    setTasks(updatedTasks);
   };
 
   // Filter and search tasks
@@ -87,7 +114,8 @@ const TaskApp: React.FC = () => {
     const matchesSearch = !searchTerm || 
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.category.toLowerCase().includes(searchTerm.toLowerCase());
+      task.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     
     return matchesFilter && matchesSearch;
   });
@@ -124,6 +152,12 @@ const TaskApp: React.FC = () => {
 
   return (
     <div className={`app ${darkMode ? 'dark' : 'light'}`}>
+      {/* Confetti component for task completion */}
+      <Confetti isActive={showConfetti} onComplete={() => setShowConfetti(false)} />
+      
+      {/* Motivational Quote Component */}
+      {showQuote && <MotivationalQuote onClose={() => setShowQuote(false)} />}
+      
       <header className="app-header">
         <h1>PlanPilot</h1>
         <button className="theme-toggle" onClick={toggleDarkMode}>

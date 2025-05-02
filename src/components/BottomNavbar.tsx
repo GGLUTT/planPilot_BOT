@@ -46,6 +46,30 @@ const BottomNavbar: React.FC = () => {
       </div>
       
       <div 
+        className={`nav-item ${isActive('/telegram') ? 'active' : ''}`}
+        onClick={() => navigate('/telegram')}
+      >
+        <div className="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.5 2L2 10.5l7 2.5L13 20l3.5-5.5 5-2z"></path>
+          </svg>
+        </div>
+        <span>Telegram</span>
+      </div>
+      
+      <div 
+        className={`nav-item ${isActive('/subscription') ? 'active' : ''}`}
+        onClick={() => navigate('/subscription')}
+      >
+        <div className="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.1-6.3-4.6-6.3 4.6 2.3-7.1-6-4.6h7.6z"></path>
+          </svg>
+        </div>
+        <span>Тарифи</span>
+      </div>
+      
+      <div 
         className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
         onClick={() => navigate('/profile')}
       >

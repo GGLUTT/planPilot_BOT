@@ -1,0 +1,59 @@
+.motivational-quote {
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  padding: 25px;
+  margin: 20px 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dark-mode .motivational-quote {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.quote-content {
+  position: relative;
+  padding: 10px 0;
+}
+
+.quote-icon {
+  font-size: 3rem;
+  color: var(--primary-light);
+  opacity: 0.3;
+  position: absolute;
+  top: -20px;
+  left: -10px;
+}
+
+.quote-text {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.quote-author {
+  font-size: 1rem;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.close-quote-btn {
+  display: block;
+  margin: 20px auto 0;
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-quote-btn:hover {
+  background-color: var(--primary-dark);
+} 
